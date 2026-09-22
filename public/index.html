@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Collection</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, sans-serif;
+      background: #f2f4f7;
+      color: #17202a;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgb(23 32 42 / 10%);
+    }
+
+    h1 { margin-top: 0; text-align: center; }
+    h2 { margin-bottom: 0.75rem; }
+
+    form {
+      display: grid;
+      grid-template-columns: 1.3fr 1.3fr 0.7fr auto;
+      gap: 0.6rem;
+      align-items: end;
+    }
+
+    label { display: grid; gap: 0.3rem; font-size: 0.8rem; font-weight: 700; }
+    input, button { box-sizing: border-box; padding: 0.65rem; font: inherit; }
+    input { border: 1px solid #bcc5cf; border-radius: 4px; }
+    button { border: 1px solid #1d5f91; border-radius: 4px; background: #1d5f91; color: white; cursor: pointer; }
+    button:hover { background: #164b73; }
+    #message { min-height: 1.3rem; color: #216e39; font-size: 0.9rem; }
+    #message.error { color: #b42318; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.7rem; border: 1px solid #d7dce1; text-align: left; }
+    th { background: #e9edf1; }
+
+    @media (max-width: 620px) {
+      form { grid-template-columns: 1fr; }
+      main { padding: 1.25rem; }
+      th, td { padding: 0.5rem; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Movie Collection</h1>
+
+    <h2>Add Movie</h2>
+    <form id="movie-form">
+      <label>Title <input name="title" required></label>
+      <label>Genre <input name="genre" required></label>
+      <label>Year <input name="year" type="number" min="1888" required></label>
+      <button type="submit">Add Movie</button>
+    </form>
+    <p id="message" role="status"></p>
+
+    <h2>Movies</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Title</th><th>Genre</th><th>Year</th></tr>
+      </thead>
+      <tbody id="movie-list"></tbody>
+    </table>
+  </main>
+
+  <script>
+    const form = document.querySelector('#movie-form');
+    const movieList = document.querySelector('#movie-list');
+    const message = document.querySelector('#message');
+
+    async function loadMovies() {
+      const response = await fetch('/api/movies');
+      const movies = await response.json();
+      movieList.innerHTML = movies.map((movie) => `
+        <tr><td>${movie.id}</td><td>${movie.title}</td><td>${movie.genre}</td><td>${movie.year}</td></tr>
+      `).join('');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.className = '';
+
+      const data = Object.fromEntries(new FormData(form));
+      const response = await fetch('/api/movies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        message.textContent = result.error;
+        message.className = 'error';
+        return;
+      }
+
+      message.textContent = 'Movie added successfully';
+      form.reset();
+      await loadMovies();
+    });
+
+    loadMovies().catch(() => {
+      message.textContent = 'Unable to load movies';
+      message.className = 'error';
+    });
+  </script>
+</body>
+</html>
